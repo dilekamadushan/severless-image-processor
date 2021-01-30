@@ -12,61 +12,89 @@ const PNG_MIME_TYPE = "image/png";
 const JPEG_MIME_TYPE = "image/jpeg";
 const JPG_MIME_TYPE = "image/jpg";
 
+const axios = require('axios');
+
 const MIME_TYPES = [PNG_MIME_TYPE, JPEG_MIME_TYPE, JPG_MIME_TYPE];
 
 module.exports.handler = async event => {
-  try {
-    const formData = await formParser.parser(event, MAX_SIZE);
-    const file = formData.files[0];
+  console.log("11111111111");
 
-    if (!isAllowedFile(file.content.byteLength, file.contentType))
-      getErrorMessage("File size or type not allowed");
+  if (event.httpMethod === 'POST') {
 
-    const uid = uuid();
+    try {
+      const formData = await formParser.parser(event, MAX_SIZE);
+      const file = formData.files[0];
 
-    const originalKey = `${uid}_original_${file.filename}`;
-    const thumbnailKey = `${uid}_thumbnail_${file.filename}`;
 
-    const fileResizedBuffer = await resize(
-      file.content,
-      file.contentType,
-      460
-    );
+      if (!isAllowedFile(file.content.byteLength, file.contentType))
+        getErrorMessage("File size or type not allowed");
 
-    const [originalFile, thumbnailFile] = await Promise.all([
-      uploadToS3(bucket, originalKey, file.content, file.contentType),
-      uploadToS3(bucket, thumbnailKey, fileResizedBuffer, file.contentType)
-    ]);
+      const uid = uuid();
 
-    const signedOriginalUrl = s3.getSignedUrl("getObject", {
-      Bucket: originalFile.Bucket,
-      Key: originalKey,
-      Expires: 60000
-    });
+      const originalKey = `${uid}_original_${file.filename}`;
+      const thumbnailKey = `${uid}_thumbnail_${file.filename}`;
 
-    const signedThumbnailUrl = s3.getSignedUrl("getObject", {
-      Bucket: thumbnailFile.Bucket,
-      Key: thumbnailKey,
-      Expires: 60000
-    });
+      const fileResizedBuffer = await resize(
+          file.content,
+          file.contentType,
+          460
+      );
 
+      const [originalFile] = await Promise.all([
+        uploadToS3(bucket, originalKey, file.content, file.contentType)
+      ]);
+
+      const signedOriginalUrl = s3.getSignedUrl("getObject", {
+        Bucket: originalFile.Bucket,
+        Key: originalKey,
+        Expires: 60000
+      });
+
+      const S3response = {
+          id: uid,
+          mimeType: file.contentType,
+          originalKey: originalFile.key,
+          bucket: originalFile.Bucket,
+          fileName: file.filename,
+          originalUrl: signedOriginalUrl,
+          originalSize: file.content.byteLength
+        };
+
+      const response = {
+        statusCode: 200,
+        headers: {
+          'Access-Control-Allow-Origin': '*'
+        },
+        body: JSON.stringify({
+          S3response
+        }),
+      };
+
+
+
+      console.log("file name"+ file.filename);
+
+      console.log(JSON.stringify(response));
+
+
+      return response;
+    } catch (e) {
+      console.log(JSON.stringify(e));
+      return getErrorMessage(e.message);
+    }
+    //...
+  }
+  else {
     return {
       statusCode: 200,
-      body: JSON.stringify({
-        id: uid,
-        mimeType: file.contentType,
-        originalKey: originalFile.key,
-        thumbnailKey: thumbnailFile.key,
-        bucket: originalFile.Bucket,
-        fileName: file.filename,
-        originalUrl: signedOriginalUrl,
-        thumbnailUrl: signedThumbnailUrl,
-        originalSize: file.content.byteLength
-      })
+      headers: {
+        'Access-Control-Allow-Origin': '*'
+      },
+      body: JSON.stringify('Hello from Lambda!'),
     };
-  } catch (e) {
-    return getErrorMessage(e.message);
+
   }
+
 };
 
 const getErrorMessage = message => ({
@@ -78,8 +106,8 @@ const getErrorMessage = message => ({
 
 const isAllowedSize = size => size <= MAX_SIZE;
 
-const isAllowedMimeType = mimeType =>
-  MIME_TYPES.find(type => type === mimeType);
+const isAllowedMimeType = mimeType => true;
+  //MIME_TYPES.find(type => type === mimeType);
 
 const isAllowedFile = (size, mimeType) =>
   isAllowedSize(size) && isAllowedMimeType(mimeType);

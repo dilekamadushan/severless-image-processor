@@ -3,17 +3,22 @@
 # Serverless.yml is the configuration the CLI
 # uses to deploy your code to your provider of choice
 # The `service` block is the name of the service
-service: file-UploaderService-foqc-home
+service: image-processor
 # The `provider` block defines where your service will be deployed
+
+plugins:
+  - serverless-offline
+
+
 custom:
-  bucket: lambda-test-foqc-file-home
+  bucket: msc-group4-cloud-images-repo
  
 # The `provider` block defines where your service will be deployed
 provider:
   name: aws
   runtime: nodejs12.x
-  region: us-east-1
-  stackName: fileUploaderHome
+  region: us-east-2
+  stackName: image-processor
   apiGateway:
     binaryMediaTypes:
       - '*/*'
@@ -33,12 +38,6 @@ functions:
       - http:
           path: upload
           method: post
-          cors: true
+          cors: true # <-- CORS!
     environment:
-      Bucket: ${self:custom.bucket} 
-resources:
-  Resources:
-    StorageBucket:
-      Type: "AWS::S3::Bucket"
-      Properties:
-        BucketName: ${self:custom.bucket}
+      Bucket: ${self:custom.bucket}
