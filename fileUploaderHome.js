@@ -17,9 +17,10 @@ const axios = require('axios');
 const MIME_TYPES = [PNG_MIME_TYPE, JPEG_MIME_TYPE, JPG_MIME_TYPE];
 
 module.exports.handler = async event => {
-  console.log("11111111111");
+  console.log("Inside Handler event");
 
   if (event.httpMethod === 'POST') {
+    console.log("POST method received");
 
     try {
       const formData = await formParser.parser(event, MAX_SIZE);
@@ -32,13 +33,6 @@ module.exports.handler = async event => {
       const uid = uuid();
 
       const originalKey = `${uid}_original_${file.filename}`;
-      const thumbnailKey = `${uid}_thumbnail_${file.filename}`;
-
-      const fileResizedBuffer = await resize(
-          file.content,
-          file.contentType,
-          460
-      );
 
       const [originalFile] = await Promise.all([
         uploadToS3(bucket, originalKey, file.content, file.contentType)
@@ -60,29 +54,40 @@ module.exports.handler = async event => {
           originalSize: file.content.byteLength
         };
 
-      const response = {
+      console.log("S3 File Uploaded details " +JSON.stringify(S3response));
+
+      let axiosConfig = {
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      };
+
+
+      const faceMaskRequest = {
+        image_path: originalFile.key
+      };
+
+      console.log("Sending the request to face mask api "+ JSON.stringify(faceMaskRequest));
+
+      const faceMaskResponse = await axios.post('http://face-mask-mask-alb-474867008.us-east-2.elb.amazonaws.com:5000/validate', faceMaskRequest, axiosConfig);
+
+      console.log("Response from face mask api "+ JSON.stringify(faceMaskResponse.data));
+
+
+      return {
         statusCode: 200,
         headers: {
           'Access-Control-Allow-Origin': '*'
         },
         body: JSON.stringify({
-          S3response
+          message: faceMaskResponse.data
         }),
       };
-
-
-
-      console.log("file name"+ file.filename);
-
-      console.log(JSON.stringify(response));
-
-
-      return response;
     } catch (e) {
       console.log(JSON.stringify(e));
       return getErrorMessage(e.message);
+
     }
-    //...
   }
   else {
     return {
@@ -99,6 +104,9 @@ module.exports.handler = async event => {
 
 const getErrorMessage = message => ({
   statusCode: 500,
+  headers: {
+    'Access-Control-Allow-Origin': '*'
+  },
   body: JSON.stringify({
     message
   })

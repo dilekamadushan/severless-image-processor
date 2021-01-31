@@ -11,7 +11,7 @@ plugins:
 
 
 custom:
-  bucket: msc-group4-cloud-images-repo
+  bucket: msc-group4-cloud-repo
  
 # The `provider` block defines where your service will be deployed
 provider:
@@ -33,11 +33,21 @@ provider:
 functions:
   UploadFileHome:
     handler: fileUploaderHome.handler
+    timeout: 120
     # The `events` block defines how to trigger the handler.helloWorld code
     events:
       - http:
           path: upload
           method: post
-          cors: true # <-- CORS!
+          cors:
+              origin: '*'
+              headers: # <-- Specify allowed headers
+                - Content-Type
+                - X-Amz-Date
+                - Authorization
+                - X-Api-Key
+                - X-Amz-Security-Token
+                - X-Amz-User-Agent
+              allowCredentials: false
     environment:
       Bucket: ${self:custom.bucket}

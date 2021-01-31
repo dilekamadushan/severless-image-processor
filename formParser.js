@@ -16,13 +16,11 @@ module.exports.parser = (event, fileSize) =>
       files: []
     };
     busboy.on("file", (fieldname, file, filename, encoding, mimetype) => {
-        console.log("5555555555555555");
       const uploadFile = {};
       file.on("data", data => {
         uploadFile.content = data;
       });
       file.on("end", () => {
-          console.log("333333333333");
         if (uploadFile.content) {
           uploadFile.filename = filename;
           uploadFile.contentType = mimetype;
