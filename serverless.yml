@@ -49,5 +49,21 @@ functions:
                 - X-Amz-Security-Token
                 - X-Amz-User-Agent
               allowCredentials: false
-    environment:
-      Bucket: ${self:custom.bucket}
+    UserRegistration:
+      handler: userRegistration.handler
+      timeout: 120
+      # The `events` block defines how to trigger the handler.helloWorld code
+      events:
+        - http:
+            path: create-user
+            method: post
+            cors:
+              origin: '*'
+              headers: # <-- Specify allowed headers
+                - Content-Type
+                - X-Amz-Date
+                - Authorization
+                - X-Api-Key
+                - X-Amz-Security-Token
+                - X-Amz-User-Agent
+              allowCredentials: false
