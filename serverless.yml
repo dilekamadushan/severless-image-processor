@@ -49,6 +49,8 @@ functions:
                 - X-Amz-Security-Token
                 - X-Amz-User-Agent
               allowCredentials: false
+    environment:
+      Bucket: ${self:custom.bucket}
     UserRegistration:
       handler: userRegistration.handler
       timeout: 120
