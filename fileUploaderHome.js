@@ -69,7 +69,7 @@ module.exports.handler = async event => {
 
       console.log("Sending the request to face mask api "+ JSON.stringify(faceMaskRequest));
 
-      const faceMaskResponse = await axios.post('http://mask-detector-mask-alb-104544470.us-east-2.elb.amazonaws.com:5000/validate', faceMaskRequest, axiosConfig);
+      const faceMaskResponse = await axios.post('http://3.20.250.131:5000/validate', faceMaskRequest, axiosConfig);
 
       console.log("Response from face mask api "+ JSON.stringify(faceMaskResponse.data));
 
